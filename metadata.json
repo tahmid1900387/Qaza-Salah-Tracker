@@ -1,0 +1,6 @@
+{
+  "name": "Qaza Tracker",
+  "description": "A clean, beautiful, and peaceful companion app for Muslims to gently track and complete missed Salah (Qaza) prayers step by step without feeling overwhelmed.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

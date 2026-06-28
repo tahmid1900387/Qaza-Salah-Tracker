@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Beautiful Golden Crescent Moon -->
+    <path
+        android:fillColor="#D5A94E"
+        android:pathData="M54,24 A30,30 0 1 0 84,54 A25,25 0 1 1 54,24 Z" />
+    <!-- Golden Star -->
+    <path
+        android:fillColor="#D5A94E"
+        android:pathData="M70,33 L71.8,37.2 L76.2,37.8 L72.8,40.8 L73.8,45.2 L70,42.8 L66.2,45.2 L67.2,40.8 L63.8,37.8 L68.2,37.2 Z" />
+</vector>
