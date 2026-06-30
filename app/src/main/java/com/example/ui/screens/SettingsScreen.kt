@@ -38,6 +38,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -57,6 +60,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.QazaViewModel
 import com.example.ui.components.FrostedGlassCard
+import com.example.data.PrayerTimeCalculator
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.Box
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +79,7 @@ fun SettingsScreen(
     var tempMonths by remember(settings) { mutableStateOf(settings?.missedMonths ?: 0) }
     var tempDays by remember(settings) { mutableStateOf(settings?.missedDays ?: 0) }
     var tempGoal by remember(settings) { mutableStateOf(settings?.dailyGoal ?: 5) }
+    var tempName by remember(settings) { mutableStateOf(settings?.userName ?: "User") }
 
     var showResetDialog by remember { mutableStateOf(false) }
     var showSaveNotification by remember { mutableStateOf(false) }
@@ -101,6 +110,168 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Section 0: Profile Editor
+            Text(
+                text = "Profile Settings",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+            )
+
+            FrostedGlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                cornerRadius = 24.dp
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Edit Profile",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Your Display Name",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        placeholder = { Text("Enter your name", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("settings_username_input")
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            viewModel.updateUserName(tempName)
+                            showSaveNotification = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("save_profile_btn")
+                    ) {
+                        Text("Save Profile Name", fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Location Selection Row
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Edit Location",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Salah Calculation Location",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Select your nearest city to automatically compute accurate offline Salah timetable.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    var settingsDropdownExpanded by remember { mutableStateOf(false) }
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .clickable { settingsDropdownExpanded = true }
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .testTag("settings_city_selector_trigger")
+                        ) {
+                            Text(
+                                text = settings?.selectedCity ?: "Dhaka",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "▼",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = settingsDropdownExpanded,
+                            onDismissRequest = { settingsDropdownExpanded = false },
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clip(RoundedCornerShape(12.dp))
+                        ) {
+                            PrayerTimeCalculator.CITIES.forEach { city ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${city.name} (GMT${if (city.timezone >= 0) "+" else ""}${city.timezone.toInt()})",
+                                            fontWeight = if (city.name == (settings?.selectedCity ?: "Dhaka")) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (city.name == (settings?.selectedCity ?: "Dhaka")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.updateSelectedCity(city.name)
+                                        settingsDropdownExpanded = false
+                                        showSaveNotification = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Section 1: Calculation Editor
             Text(

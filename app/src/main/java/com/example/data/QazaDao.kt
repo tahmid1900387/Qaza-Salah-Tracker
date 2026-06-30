@@ -43,4 +43,19 @@ interface QazaDao {
 
     @Query("DELETE FROM qaza_prayers")
     suspend fun clearPrayers()
+
+    @Query("SELECT * FROM tasbih ORDER BY lastUpdated DESC")
+    fun getTasbihListFlow(): Flow<List<TasbihEntity>>
+
+    @Query("SELECT * FROM tasbih WHERE id = :id LIMIT 1")
+    suspend fun getTasbihById(id: Int): TasbihEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTasbih(tasbih: TasbihEntity)
+
+    @Delete
+    suspend fun deleteTasbih(tasbih: TasbihEntity)
+
+    @Query("DELETE FROM tasbih")
+    suspend fun clearTasbihs()
 }

@@ -8,8 +8,12 @@ import com.example.data.QazaHistoryEntity
 import com.example.data.QazaPrayerEntity
 import com.example.data.QazaRepository
 import com.example.data.QazaSettingsEntity
+import com.example.data.TasbihEntity
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,13 +25,40 @@ import java.util.Locale
 class QazaViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: QazaRepository
+    private val sharedPrefs = application.getSharedPreferences("qaza_prefs", android.content.Context.MODE_PRIVATE)
+
+    private val _todayPrayerStatuses = MutableStateFlow<Map<String, String>>(emptyMap())
+    val todayPrayerStatuses = _todayPrayerStatuses.asStateFlow()
 
     init {
         val database = QazaDatabase.getDatabase(application)
         repository = QazaRepository(database.qazaDao())
+        
+        // Populate default tasbih list if empty
+        viewModelScope.launch {
+            try {
+                val currentList = repository.tasbihList.first()
+                if (currentList.isEmpty()) {
+                    repository.addTasbih("Subhanallah (سبحان الله)", 33)
+                    repository.addTasbih("Alhamdulillah (الحمد لله)", 33)
+                    repository.addTasbih("Allahu Akbar (الله أكبر)", 34)
+                    repository.addTasbih("Astaghfirullah (أستغفر الله)", 100)
+                    repository.addTasbih("Subhanallahi Wa Bihamdihi (سبحان الله وبحمده)", 100000)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     val prayers: StateFlow<List<QazaPrayerEntity>> = repository.prayers
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val tasbihList: StateFlow<List<TasbihEntity>> = repository.tasbihList
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -121,9 +152,21 @@ class QazaViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setupOnboarding(years: Int, months: Int, days: Int, dailyGoal: Int) {
+    fun setupOnboarding(years: Int, months: Int, days: Int, dailyGoal: Int, userName: String, selectedCity: String = "Dhaka") {
         viewModelScope.launch {
-            repository.setupOnboarding(years, months, days, dailyGoal)
+            repository.setupOnboarding(years, months, days, dailyGoal, userName, selectedCity)
+        }
+    }
+
+    fun updateUserName(name: String) {
+        viewModelScope.launch {
+            repository.updateUserName(name)
+        }
+    }
+
+    fun updateSelectedCity(city: String) {
+        viewModelScope.launch {
+            repository.updateSelectedCity(city)
         }
     }
 
@@ -139,9 +182,78 @@ class QazaViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun loadStatusesForDate(dateStr: String) {
+        val map = mapOf(
+            "Fajr" to (sharedPrefs.getString("status_${dateStr}_Fajr", "NONE") ?: "NONE"),
+            "Dhuhr" to (sharedPrefs.getString("status_${dateStr}_Dhuhr", "NONE") ?: "NONE"),
+            "Asr" to (sharedPrefs.getString("status_${dateStr}_Asr", "NONE") ?: "NONE"),
+            "Maghrib" to (sharedPrefs.getString("status_${dateStr}_Maghrib", "NONE") ?: "NONE"),
+            "Isha" to (sharedPrefs.getString("status_${dateStr}_Isha", "NONE") ?: "NONE")
+        )
+        _todayPrayerStatuses.value = map
+    }
+
+    fun updateTodayPrayerStatus(prayerName: String, dateStr: String, newStatus: String) {
+        val previousStatus = _todayPrayerStatuses.value[prayerName] ?: "NONE"
+        if (previousStatus == newStatus) return
+
+        sharedPrefs.edit().putString("status_${dateStr}_$prayerName", newStatus).apply()
+
+        val currentMap = _todayPrayerStatuses.value.toMutableMap()
+        currentMap[prayerName] = newStatus
+        _todayPrayerStatuses.value = currentMap
+
+        viewModelScope.launch {
+            if (newStatus == "QAZA" && previousStatus != "QAZA") {
+                repository.updateQazaBacklog(prayerName, 1)
+            } else if (previousStatus == "QAZA" && newStatus != "QAZA") {
+                repository.updateQazaBacklog(prayerName, -1)
+            }
+        }
+    }
+
     fun resetAll() {
         viewModelScope.launch {
+            sharedPrefs.edit().clear().apply()
+            _todayPrayerStatuses.value = emptyMap()
             repository.resetAll()
+        }
+    }
+
+    // Tasbih Action Methods
+    fun addTasbih(name: String, target: Int, initialCount: Int = 0) {
+        viewModelScope.launch {
+            repository.addTasbih(name, target, initialCount)
+        }
+    }
+
+    fun incrementTasbih(id: Int, amount: Int = 1) {
+        viewModelScope.launch {
+            repository.incrementTasbih(id, amount)
+        }
+    }
+
+    fun decrementTasbih(id: Int, amount: Int = 1) {
+        viewModelScope.launch {
+            repository.decrementTasbih(id, amount)
+        }
+    }
+
+    fun resetTasbih(id: Int) {
+        viewModelScope.launch {
+            repository.resetTasbih(id)
+        }
+    }
+
+    fun updateTasbihTarget(id: Int, target: Int) {
+        viewModelScope.launch {
+            repository.updateTasbihTarget(id, target)
+        }
+    }
+
+    fun deleteTasbih(id: Int) {
+        viewModelScope.launch {
+            repository.deleteTasbih(id)
         }
     }
 

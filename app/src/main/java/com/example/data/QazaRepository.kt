@@ -114,7 +114,7 @@ class QazaRepository(private val qazaDao: QazaDao) {
         return true
     }
 
-    suspend fun setupOnboarding(years: Int, months: Int, days: Int, dailyGoal: Int): Boolean {
+    suspend fun setupOnboarding(years: Int, months: Int, days: Int, dailyGoal: Int, userName: String, selectedCity: String = "Dhaka"): Boolean {
         val totalDays = (years * 365) + (months * 30) + days
         val prayerNames = listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
         val prayersList = prayerNames.map { name ->
@@ -130,10 +130,29 @@ class QazaRepository(private val qazaDao: QazaDao) {
             dailyGoal = dailyGoal,
             isOnboarded = true,
             streak = 0,
-            lastActiveDate = ""
+            lastActiveDate = "",
+            userName = userName.trim().ifEmpty { "User" },
+            selectedCity = selectedCity
         )
         qazaDao.insertSettings(settingsEntity)
         return true
+    }
+
+    suspend fun updateQazaBacklog(prayerName: String, delta: Int) {
+        val prayersList = qazaDao.getPrayers()
+        val targetPrayer = prayersList.find { it.name == prayerName } ?: return
+        val newTotal = (targetPrayer.totalMissed + delta).coerceAtLeast(0)
+        qazaDao.insertPrayers(listOf(targetPrayer.copy(totalMissed = newTotal)))
+    }
+
+    suspend fun updateUserName(name: String) {
+        val currentSettings = qazaDao.getSettings() ?: QazaSettingsEntity()
+        qazaDao.insertSettings(currentSettings.copy(userName = name.trim().ifEmpty { "User" }))
+    }
+
+    suspend fun updateSelectedCity(city: String) {
+        val currentSettings = qazaDao.getSettings() ?: QazaSettingsEntity()
+        qazaDao.insertSettings(currentSettings.copy(selectedCity = city))
     }
 
     suspend fun updateDailyGoal(goal: Int) {
@@ -171,6 +190,7 @@ class QazaRepository(private val qazaDao: QazaDao) {
     suspend fun resetAll() {
         qazaDao.clearHistory()
         qazaDao.clearPrayers()
+        qazaDao.clearTasbihs()
         qazaDao.insertSettings(
             QazaSettingsEntity(
                 id = 1,
@@ -183,5 +203,42 @@ class QazaRepository(private val qazaDao: QazaDao) {
                 lastActiveDate = ""
             )
         )
+    }
+
+    // Tasbih Operations
+    val tasbihList: Flow<List<TasbihEntity>> = qazaDao.getTasbihListFlow()
+
+    suspend fun addTasbih(name: String, target: Int, initialCount: Int = 0) {
+        val tasbih = TasbihEntity(name = name, target = target, count = initialCount, lastUpdated = System.currentTimeMillis())
+        qazaDao.insertTasbih(tasbih)
+    }
+
+    suspend fun incrementTasbih(id: Int, amount: Int = 1) {
+        val current = qazaDao.getTasbihById(id) ?: return
+        // No absolute limit to target if they want to count beyond target, but standard behavior keeps it capped or allows overflow.
+        // Capping at target can be frustrating if they accidentally click or want to overflow, but user asked "fixed his target then every time he reads he can count and see how many read and how many left". Let's cap at target or support overflow up to target. Let's make it count up to target or even past it, let's coerce to target for the "left" calculation but allow the counter to go beyond, or cap it at target. Let's cap at target as it is a "fixed target" tracker.
+        val newCount = (current.count + amount).coerceIn(0, current.target)
+        qazaDao.insertTasbih(current.copy(count = newCount, lastUpdated = System.currentTimeMillis()))
+    }
+
+    suspend fun decrementTasbih(id: Int, amount: Int = 1) {
+        val current = qazaDao.getTasbihById(id) ?: return
+        val newCount = (current.count - amount).coerceAtLeast(0)
+        qazaDao.insertTasbih(current.copy(count = newCount, lastUpdated = System.currentTimeMillis()))
+    }
+
+    suspend fun resetTasbih(id: Int) {
+        val current = qazaDao.getTasbihById(id) ?: return
+        qazaDao.insertTasbih(current.copy(count = 0, lastUpdated = System.currentTimeMillis()))
+    }
+
+    suspend fun updateTasbihTarget(id: Int, target: Int) {
+        val current = qazaDao.getTasbihById(id) ?: return
+        qazaDao.insertTasbih(current.copy(target = target, lastUpdated = System.currentTimeMillis()))
+    }
+
+    suspend fun deleteTasbih(id: Int) {
+        val current = qazaDao.getTasbihById(id) ?: return
+        qazaDao.deleteTasbih(current)
     }
 }

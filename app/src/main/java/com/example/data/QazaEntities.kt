@@ -31,5 +31,20 @@ data class QazaSettingsEntity(
     val dailyGoal: Int = 5, // daily goal in total prayers, e.g., 5 prayers a day
     val isOnboarded: Boolean = false,
     val streak: Int = 0,
-    val lastActiveDate: String = "" // "yyyy-MM-dd"
+    val lastActiveDate: String = "", // "yyyy-MM-dd"
+    val userName: String = "User",
+    val selectedCity: String = "Dhaka"
 )
+
+@Entity(tableName = "tasbih")
+data class TasbihEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val target: Int,
+    val count: Int,
+    val notes: String = "",
+    val lastUpdated: Long = System.currentTimeMillis()
+) {
+    val remaining: Int get() = (target - count).coerceAtLeast(0)
+    val progress: Float get() = if (target > 0) count.toFloat() / target else 0f
+}

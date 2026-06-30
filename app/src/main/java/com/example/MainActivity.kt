@@ -15,6 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -36,7 +39,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.QazaViewModel
 import com.example.ui.components.FrostedGlassBackground
 import com.example.ui.screens.DashboardScreen
-import com.example.ui.screens.HistoryScreen
+import com.example.ui.screens.SalahScreen
+import com.example.ui.screens.TasbihScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SplashScreen
@@ -106,8 +110,8 @@ fun AppNavigator(
                 }
                 ScreenState.Onboarding -> {
                     OnboardingScreen(
-                        onComplete = { years, months, days, dailyGoal ->
-                            viewModel.setupOnboarding(years, months, days, dailyGoal)
+                        onComplete = { years, months, days, dailyGoal, userName, selectedCity ->
+                            viewModel.setupOnboarding(years, months, days, dailyGoal, userName, selectedCity)
                             currentScreen = ScreenState.Main
                         },
                         getEstimatedRemainingTime = { remaining, goal ->
@@ -128,7 +132,7 @@ fun AppNavigator(
                                 unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                                 unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                             )
-                            NavigationBar(
+                             NavigationBar(
                                 containerColor = glassBarBg,
                                 tonalElevation = 0.dp,
                                 modifier = Modifier
@@ -141,13 +145,13 @@ fun AppNavigator(
                                     colors = navItemColors,
                                     icon = {
                                         Icon(
-                                            imageVector = Icons.Default.Home,
-                                            contentDescription = "Dashboard",
+                                            imageVector = Icons.Default.Schedule,
+                                            contentDescription = "Daily Salah",
                                             modifier = Modifier.size(24.dp)
                                         )
                                     },
-                                    label = { Text("Dashboard") },
-                                    modifier = Modifier.testTag("nav_tab_dashboard")
+                                    label = { Text("Daily Salah") },
+                                    modifier = Modifier.testTag("nav_tab_salah")
                                 )
 
                                 NavigationBarItem(
@@ -156,18 +160,33 @@ fun AppNavigator(
                                     colors = navItemColors,
                                     icon = {
                                         Icon(
-                                            imageVector = Icons.Default.History,
-                                            contentDescription = "History",
+                                            imageVector = Icons.Default.Bookmark,
+                                            contentDescription = "Qaza Tracker",
                                             modifier = Modifier.size(24.dp)
                                         )
                                     },
-                                    label = { Text("History") },
-                                    modifier = Modifier.testTag("nav_tab_history")
+                                    label = { Text("Qaza") },
+                                    modifier = Modifier.testTag("nav_tab_qaza")
                                 )
 
                                 NavigationBarItem(
                                     selected = selectedTab == 2,
                                     onClick = { selectedTab = 2 },
+                                    colors = navItemColors,
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Fingerprint,
+                                            contentDescription = "Tasbih Counter",
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    },
+                                    label = { Text("Tasbih") },
+                                    modifier = Modifier.testTag("nav_tab_tasbih")
+                                )
+
+                                NavigationBarItem(
+                                    selected = selectedTab == 3,
+                                    onClick = { selectedTab = 3 },
                                     colors = navItemColors,
                                     icon = {
                                         Icon(
@@ -184,12 +203,19 @@ fun AppNavigator(
                     ) { innerPadding ->
                         Box(modifier = Modifier.padding(innerPadding)) {
                             when (selectedTab) {
-                                0 -> DashboardScreen(
+                                0 -> SalahScreen(
                                     viewModel = viewModel,
-                                    onNavigateToHistory = { selectedTab = 1 }
+                                    onNavigateToSettings = { selectedTab = 3 }
                                 )
-                                1 -> HistoryScreen(viewModel = viewModel)
-                                2 -> SettingsScreen(
+                                1 -> DashboardScreen(
+                                    viewModel = viewModel,
+                                    onNavigateToSettings = { selectedTab = 3 }
+                                )
+                                2 -> TasbihScreen(
+                                    viewModel = viewModel,
+                                    onNavigateToSettings = { selectedTab = 3 }
+                                )
+                                3 -> SettingsScreen(
                                     viewModel = viewModel,
                                     isDarkTheme = isDarkTheme,
                                     onToggleDarkTheme = onToggleDarkTheme

@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [QazaPrayerEntity::class, QazaHistoryEntity::class, QazaSettingsEntity::class],
-    version = 1,
+    entities = [QazaPrayerEntity::class, QazaHistoryEntity::class, QazaSettingsEntity::class, TasbihEntity::class],
+    version = 4,
     exportSchema = false
 )
 abstract class QazaDatabase : RoomDatabase() {

@@ -1,6 +1,10 @@
 package com.example.ui.screens
 
 import com.example.ui.components.FrostedGlassCard
+import com.example.data.PrayerTimeCalculator
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 
 import androidx.compose.animation.AnimatedContent
@@ -60,10 +64,16 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun OnboardingScreen(
-    onComplete: (years: Int, months: Int, days: Int, dailyGoal: Int) -> Unit,
+    onComplete: (years: Int, months: Int, days: Int, dailyGoal: Int, userName: String, selectedCity: String) -> Unit,
     getEstimatedRemainingTime: (remainingPrayers: Int, dailyGoal: Int) -> String
 ) {
     var step by remember { mutableStateOf(1) }
+    
+    // User name state
+    var userName by remember { mutableStateOf("") }
+    
+    // Selected city state
+    var selectedCity by remember { mutableStateOf("Dhaka") }
     
     // Calculation state
     var years by remember { mutableStateOf(0) }
@@ -131,7 +141,12 @@ fun OnboardingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     when (currentStep) {
-                        1 -> StepWelcome()
+                        1 -> StepWelcome(
+                            userName = userName,
+                            onUserNameChange = { userName = it },
+                            selectedCity = selectedCity,
+                            onCityChange = { selectedCity = it }
+                        )
                         2 -> StepCalculator(
                             years = years,
                             months = months,
@@ -182,7 +197,7 @@ fun OnboardingScreen(
                             }
                             step++
                         } else {
-                            onComplete(years, months, days, dailyGoal)
+                            onComplete(years, months, days, dailyGoal, userName, selectedCity)
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -211,7 +226,12 @@ fun OnboardingScreen(
 }
 
 @Composable
-fun StepWelcome() {
+fun StepWelcome(
+    userName: String,
+    onUserNameChange: (String) -> Unit,
+    selectedCity: String,
+    onCityChange: (String) -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(vertical = 16.dp)
@@ -235,6 +255,137 @@ fun StepWelcome() {
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Name input card with custom border for visibility and contrast
+        FrostedGlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            cornerRadius = 24.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "What is your name?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "This will be used to greet you on the dashboard.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                OutlinedTextField(
+                    value = userName,
+                    onValueChange = onUserNameChange,
+                    placeholder = { Text("Enter your name", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("onboarding_name_input")
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // City selection card with custom border/dropdown
+        FrostedGlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            cornerRadius = 24.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Edit Location",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Where are you located?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = "Select your nearest city to automatically customize your offline daily Salah timetable.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                )
+
+                var onboardingDropdownExpanded by remember { mutableStateOf(false) }
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .clickable { onboardingDropdownExpanded = true }
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .testTag("onboarding_city_selector_trigger")
+                    ) {
+                        Text(
+                            text = selectedCity,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "▼",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = onboardingDropdownExpanded,
+                        onDismissRequest = { onboardingDropdownExpanded = false },
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clip(RoundedCornerShape(12.dp))
+                    ) {
+                        PrayerTimeCalculator.CITIES.forEach { city ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "${city.name} (GMT${if (city.timezone >= 0) "+" else ""}${city.timezone.toInt()})",
+                                        fontWeight = if (city.name == selectedCity) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (city.name == selectedCity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = {
+                                    onCityChange(city.name)
+                                    onboardingDropdownExpanded = false
+                                },
+                                modifier = Modifier.testTag("onboarding_city_option_${city.name.lowercase()}")
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         FrostedGlassCard(
             modifier = Modifier.fillMaxWidth(),
@@ -492,7 +643,15 @@ fun StepGoalSelection(
                     .clickable { onGoalChange(goal) },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.45f),
+                    containerColor = if (isSelected) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    } else {
+                        if (androidx.compose.foundation.isSystemInDarkTheme()) {
+                            Color(0xFF1E293B).copy(alpha = 0.35f)
+                        } else {
+                            Color.White.copy(alpha = 0.45f)
+                        }
+                    },
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 border = borderStroke,
